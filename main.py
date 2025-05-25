@@ -1,38 +1,44 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import List
 import numpy as np
+import math
 
 app = FastAPI()
 
-class RSIInput(BaseModel):
+class RSIRequest(BaseModel):
     close: List[float]
-    period: Optional[int] = 14
+    period: int = 14
 
 @app.post("/rsi")
-def calculate_rsi(data: RSIInput):
-    close = np.array(data.close, dtype=float)
+def calculate_rsi(data: RSIRequest):
+    close = np.array(data.close)
     period = data.period
 
-    if len(close) < period + 1:
-        raise HTTPException(status_code=400, detail="Not enough data points for RSI calculation")
+    if len(close) < period:
+        return {"error": "Not enough data points"}
 
-    delta = np.diff(close)
-    gain = np.where(delta > 0, delta, 0)
-    loss = np.where(delta < 0, -delta, 0)
+    deltas = np.diff(close)
+    gain = np.where(deltas > 0, deltas, 0)
+    loss = np.where(deltas < 0, -deltas, 0)
 
-    avg_gain = np.zeros_like(close)
-    avg_loss = np.zeros_like(close)
+    avg_gain = np.empty_like(close)
+    avg_loss = np.empty_like(close)
 
-    avg_gain[period] = np.mean(gain[:period])
-    avg_loss[period] = np.mean(loss[:period])
+    avg_gain[:period] = np.nan
+    avg_loss[:period] = np.nan
+
+    avg_gain[period] = gain[:period].mean()
+    avg_loss[period] = loss[:period].mean()
 
     for i in range(period + 1, len(close)):
-        avg_gain[i] = (avg_gain[i-1] * (period - 1) + gain[i - 1]) / period
-        avg_loss[i] = (avg_loss[i-1] * (period - 1) + loss[i - 1]) / period
+        avg_gain[i] = (avg_gain[i - 1] * (period - 1) + gain[i - 1]) / period
+        avg_loss[i] = (avg_loss[i - 1] * (period - 1) + loss[i - 1]) / period
 
-    rs = np.divide(avg_gain, avg_loss, out=np.zeros_like(avg_gain), where=avg_loss != 0)
+    rs = avg_gain / avg_loss
     rsi = 100 - (100 / (1 + rs))
-    rsi[:period] = [None] * period  # Pad initial RSI with None
 
-    return {"rsi": rsi.tolist()}
+    # Fix NaNs/Infs by replacing with None
+    safe_rsi = [None if (math.isnan(x) or math.isinf(x)) else round(x, 2) for x in rsi]
+
+    return {"rsi": safe_rsi}
