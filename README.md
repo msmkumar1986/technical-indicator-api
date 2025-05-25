@@ -11,7 +11,7 @@ A simple RSI (Relative Strength Index) calculator API for developers — send cl
 Send a POST request to this endpoint:
 
 ```
-POST https://your-api-name.onrender.com/rsi
+POST https://rsi-api.onrender.com/rsi
 ```
 
 **Request Body:**
@@ -38,7 +38,7 @@ POST https://your-api-name.onrender.com/rsi
 ```python
 import requests
 
-url = "https://your-api-name.onrender.com/rsi"
+url = "https://rsi-api.onrender.com/rsi"
 
 data = {
     "close": [122.5, 124.1, 123.2, 125.3, 127.0, 128.2, 129.8, 131.4, 132.9, 134.5, 135.8, 136.2, 135.9, 137.0, 138.2],
@@ -56,7 +56,7 @@ print(response.json())
 ```js
 const fetch = require('node-fetch');
 
-const url = "https://your-api-name.onrender.com/rsi";
+const url = "https://rsi-api.onrender.com/rsi";
 
 const data = {
   close: [122.5, 124.1, 123.2, 125.3, 127.0, 128.2, 129.8, 131.4, 132.9, 134.5, 135.8, 136.2, 135.9, 137.0, 138.2],
