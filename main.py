@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
-from typing import List
+from typing import List, Optional
 import numpy as np
 import math
 
@@ -12,33 +12,35 @@ class RSIRequest(BaseModel):
 
 @app.post("/rsi")
 def calculate_rsi(data: RSIRequest):
-    close = np.array(data.close)
+    close = np.array(data.close, dtype=np.float64)
     period = data.period
 
-    if len(close) < period:
-        return {"error": "Not enough data points"}
+    if len(close) < period + 1:
+        return {"error": "Not enough data points for the given period."}
 
     deltas = np.diff(close)
-    gain = np.where(deltas > 0, deltas, 0)
-    loss = np.where(deltas < 0, -deltas, 0)
+    gains = np.where(deltas > 0, deltas, 0)
+    losses = np.where(deltas < 0, -deltas, 0)
 
-    avg_gain = np.empty_like(close)
-    avg_loss = np.empty_like(close)
+    avg_gain = np.zeros_like(close)
+    avg_loss = np.zeros_like(close)
 
-    avg_gain[:period] = np.nan
-    avg_loss[:period] = np.nan
-
-    avg_gain[period] = gain[:period].mean()
-    avg_loss[period] = loss[:period].mean()
+    avg_gain[period] = np.mean(gains[:period])
+    avg_loss[period] = np.mean(losses[:period])
 
     for i in range(period + 1, len(close)):
-        avg_gain[i] = (avg_gain[i - 1] * (period - 1) + gain[i - 1]) / period
-        avg_loss[i] = (avg_loss[i - 1] * (period - 1) + loss[i - 1]) / period
+        avg_gain[i] = (avg_gain[i - 1] * (period - 1) + gains[i - 1]) / period
+        avg_loss[i] = (avg_loss[i - 1] * (period - 1) + losses[i - 1]) / period
 
-    rs = avg_gain / avg_loss
+    rs = np.divide(avg_gain, avg_loss, out=np.zeros_like(avg_gain), where=avg_loss!=0)
     rsi = 100 - (100 / (1 + rs))
 
-    # Fix NaNs/Infs by replacing with None
-    safe_rsi = [None if (math.isnan(x) or math.isinf(x)) else round(x, 2) for x in rsi]
+    # Convert to list and replace out-of-range values with None
+    rsi_safe = []
+    for val in rsi:
+        if math.isnan(val) or math.isinf(val) or val == 0.0:
+            rsi_safe.append(None)
+        else:
+            rsi_safe.append(round(float(val), 2))
 
-    return {"rsi": safe_rsi}
+    return {"rsi": rsi_safe}
