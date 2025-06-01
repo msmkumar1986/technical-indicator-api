@@ -10,7 +10,7 @@ app = FastAPI()
 # CORS: Allow requests from any origin (you can restrict this to your frontend URL)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://rsi-api-demo.onrender.com"],  # Replace "*" with ["https://your-frontend-url.com"] for stricter access
+    allow_origins=["https://rsi-api-demo.onrender.com"], 
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
