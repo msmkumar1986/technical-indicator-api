@@ -3,24 +3,23 @@ from fastapi import FastAPI
 from pydantic import BaseModel
 from typing import List
 import numpy as np
+import math
 
 app = FastAPI()
 
-# Enable CORS for frontend interaction
+# CORS: Allow requests from any origin (you can restrict this to your frontend URL)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Replace * with your frontend domain if needed
+        allow_origins=["https://rsi-api-demo.onrender.com"],  # Replace "*" with ["https://your-frontend-url.com"] for stricter access
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Request model
 class RSIRequest(BaseModel):
     close: List[float]
     period: int = 14
 
-# RSI calculation endpoint
 @app.post("/rsi")
 def calculate_rsi(data: RSIRequest):
     close = np.array(data.close, dtype=np.float64)
@@ -29,21 +28,18 @@ def calculate_rsi(data: RSIRequest):
     if len(close) < period + 1:
         return {"error": "Not enough data points for the given period."}
 
-    # Calculate price changes
     deltas = np.diff(close)
     gains = np.where(deltas > 0, deltas, 0)
     losses = np.where(deltas < 0, -deltas, 0)
 
-    # Initialize averages
     avg_gain = np.mean(gains[:period])
     avg_loss = np.mean(losses[:period])
 
     rsi_values = []
 
-    # Calculate smoothed RSI values
-    for i in range(period, len(close) - 1):
-        gain = gains[i]
-        loss = losses[i]
+    for i in range(period, len(close)):
+        gain = gains[i - 1]
+        loss = losses[i - 1]
 
         avg_gain = (avg_gain * (period - 1) + gain) / period
         avg_loss = (avg_loss * (period - 1) + loss) / period
