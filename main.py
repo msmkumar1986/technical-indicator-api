@@ -8,7 +8,7 @@ import math
 app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # You can replace * with your frontend URL for stricter access
+    allow_origins=["https://rsi-api-demo.onrender.com"]
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -46,7 +46,7 @@ def calculate_rsi(data: RSIRequest):
     # Convert to list and replace out-of-range values with None
     rsi_safe = []
     for val in rsi:
-        if math.isnan(val) or math.isinf(val) or val == 0.0:
+        if math.isnan(val) or math.isinf(val):
             rsi_safe.append(None)
         else:
             rsi_safe.append(round(float(val), 2))
