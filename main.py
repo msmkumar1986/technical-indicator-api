@@ -41,13 +41,13 @@ def calculate_rsi(data: RSIRequest):
         avg_gain[i] = (avg_gain[i - 1] * (period - 1) + gains[i - 1]) / period
         avg_loss[i] = (avg_loss[i - 1] * (period - 1) + losses[i - 1]) / period
 
-    rs = np.divide(avg_gain, avg_loss, out=np.zeros_like(avg_gain), where=avg_loss != 0)
+    # Updated line: assign np.inf where avg_loss = 0
+    rs = np.divide(avg_gain, avg_loss, out=np.full_like(avg_gain, np.inf), where=avg_loss != 0)
     rsi = 100 - (100 / (1 + rs))
 
     rsi_values = [
-        round(float(r), 2) if not math.isnan(r) and not math.isinf(r) else None
+        round(float(r), 2) if not math.isnan(r) and not math.isinf(r) else 100.0
         for r in rsi
     ]
 
-    # Return only values starting from index == period (to match RSI convention)
     return {"rsi": rsi_values[period:]}
